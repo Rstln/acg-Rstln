@@ -70,6 +70,15 @@ void draw_3d_triangle_with_texture(
       Eigen::Matrix4f coeff;
       Eigen::Vector4f rhs;
 
+      // see in NUS's paper https://www.comp.nus.edu.sg/~lowkl/publications/lowk_persp_interp_techrep.pdf
+      bc[0] /= q0.w();
+      bc[1] /= q1.w();
+      bc[2] /= q2.w();
+      float tmp_sum = bc[0] + bc[1] + bc[2];
+      for (int i = 0; i < 3; i++) {
+          bc[i] /= tmp_sum;
+      }
+
       // do not change below
       auto uv = uv0 * bc[0] + uv1 * bc[1] + uv2 * bc[2]; // uv coordinate of the pixel
       // compute pixel coordinate of the texture
