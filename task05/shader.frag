@@ -35,16 +35,38 @@ float box_size = 0.6; // size of box
 /// singed distance function at the position `pos`
 float SDF(vec3 pos)
 {
+  // union
   float d0 = sdCappedCylinder(pos, len_cylinder, rad_cylinder);
-  // write some code to combine the signed distance fields above to design the object described in the README.md
-  return d0; // comment out and define new distance
+  d0 = min(d0, sdCappedCylinder(vec3(pos.yxz), len_cylinder, rad_cylinder));
+  d0 = min(d0, sdCappedCylinder(vec3(pos.xzy), len_cylinder, rad_cylinder));
+
+  // intersection
+  float d1 = max(sdBox(pos, vec3(box_size, box_size, box_size)), sdSphere(pos, rad_sphere));
+
+  // subtraction
+  float d2 = max(d1, -d0);
+
+  return d2;
 }
 
 /// RGB color at the position `pos`
 vec3 SDF_color(vec3 pos)
 {
   // write some code below to return color (RGB from 0 to 1) to paint the object describe in README.md
-  return vec3(0., 1., 0.); // comment out and define new color
+  float d1 = sdBox(pos, vec3(box_size, box_size, box_size));
+
+  float d2 = sdSphere(pos, rad_sphere);
+
+  float eps = 1.0e-3;
+  if (abs(d1) < eps) {
+    return vec3(1., 0., 0.);
+  }
+  else if (abs(d2) < eps) {
+    return vec3(0., 0., 1.);
+  }
+  else {
+    return vec3(0., 1., 0.);
+  }
 }
 
 uniform float time; // current time given from CPU
@@ -54,7 +76,7 @@ void main()
   // camera position
   vec3 cam_pos = normalize( vec3(sin(time),cos(time),0.5*sin(time)) );
 
-  // local frame defined on the cameera
+  // local frame defined on the camera
   vec3 frame_z = cam_pos;
   vec3 frame_x = normalize(cross(vec3(0,0,1),frame_z));
   vec3 frame_y = cross(frame_z,frame_x);
@@ -73,7 +95,7 @@ void main()
       gl_FragColor = vec4(1, 0, 0, 1); // paint red
       return;
     }
-    if( s0 < 1.0e-3 ){ // the ray hit the implicit surfacee
+    if( s0 < 1.0e-3 ){ // the ray hit the implicit surface
       float eps = 1.0e-3;
       float sx = SDF(pos_cur+vec3(eps,0,0))-s0; // finite difference x-direction
       float sy = SDF(pos_cur+vec3(0,eps,0))-s0; // finite difference x-direction
