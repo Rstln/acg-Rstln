@@ -368,7 +368,10 @@ int main() {
         float hit1_rad = spheres[hit1_object].emission;
         // compute the contribution for this pixel
         float rad = 0.f; // replace this with some code
-        img_light[ih * img_width + iw] += rad;
+        float tmp = hit0_refl.dot(hit0_normal);
+        if (tmp > 0.f)
+          rad += hit1_rad*tmp*hit0_brdf/hit0_pdf;
+        img_light[ih * img_width + iw] += rad / nsample;
       }
       // -----------------
       // BRDF sampling
@@ -387,7 +390,10 @@ int main() {
         float hit1_rad = spheres[hit1_object].emission;
         // compute the contribution for this pixel
         float rad = 0.f; // replace this with some code
-        img_brdf[ih * img_width + iw] += rad;
+        float tmp = hit0_refl.dot(hit0_normal);
+        if (tmp > 0.f)
+            rad += hit1_rad*tmp*hit0_brdf/hit0_pdf;
+        img_brdf[ih * img_width + iw] += rad / nsample;
       }
       // -----------------
       // Multiple importance sampling
@@ -405,7 +411,10 @@ int main() {
         float hit0_pdf_brdf_sample = spheres[hit0_object].pdf(hit0_normal, cam_ray_dir, hit0_refl);
         float hit0_pdf_light_sample = pdf_light_sample(hit0_normal, hit0_pos, cam_ray_dir, hit0_refl, hit0_object);
         float rad = 0.f; // write some code
-        img_mis[ih * img_width + iw] += rad;
+        float tmp = hit0_refl.dot(hit0_normal);
+        if (tmp > 0.f)
+            rad += hit0_pdf_light_sample*hit1_rad*hit0_refl.dot(hit0_normal)*hit0_brdf/(hit0_pdf_brdf_sample + hit0_pdf_light_sample);
+        img_mis[ih * img_width + iw] += rad / nsample;
       }
       for (int isample = 0; isample < nsample / 2; ++isample) {
         auto hit0_refl = sampling_light(hit0_normal, hit0_pos, cam_ray_dir, hit0_object, rndeng);
@@ -416,8 +425,11 @@ int main() {
         float hit1_rad = spheres[hit1_object].emission;
         float hit0_pdf_light_sample = pdf_light_sample(hit0_normal, hit0_pos, cam_ray_dir, hit0_refl, hit0_object);
         float hit0_pdf_brdf_sample = spheres[hit0_object].pdf(hit0_normal, cam_ray_dir, hit0_refl);
-        float rad = 0.f; // write some code
-        img_mis[ih * img_width + iw] += rad;
+        float rad = hit0_pdf_brdf_sample*hit1_rad*hit0_refl.dot(hit0_normal)*hit0_brdf/(hit0_pdf_brdf_sample + hit0_pdf_light_sample); // write some code
+        float tmp = hit0_refl.dot(hit0_normal);
+        if (tmp > 0.f)
+            rad += hit0_pdf_brdf_sample*hit1_rad*hit0_refl.dot(hit0_normal)*hit0_brdf/(hit0_pdf_brdf_sample + hit0_pdf_light_sample);
+        img_mis[ih * img_width + iw] += rad / nsample;
       }
     }
   }
